@@ -1,19 +1,20 @@
 import http from 'k6/http';
 import { sleep, check } from 'k6';
 import { Rate } from 'k6/metrics';
+import { config } from './config.js';
+
+export let errorRate = new Rate('errors');
+
 
 export const options = {
   stages: [
-        { duration: '1s', target: 1 }, 
-    ],
+    { duration: '1s', target: 1 },
+  ],
   cloud: {
-    projectID: 6202702,
+    projectID: config.cloud.projectID,
     name: "mobile-pre-registeration.js",
   },
 };
-
-
-export let errorRate = new Rate('errors');
 
 
 function randomString(length) {
@@ -26,15 +27,15 @@ function randomString(length) {
 }
 
 export default function () {
-    let payload1 = JSON.stringify({
+    let payload = JSON.stringify({
         referral_code: "AGENTREF",
         email: randomString(10) + '@k6.com',
     });
 
     let headers = { 'Content-Type': 'application/json' };
-    let preRegister = http.post('https://htp-mobile-api.vai247.pro/api/v1/auth/pre-register', payload1, { headers });
+    let preRegister = http.post(`${config.baseUrls.mobile}/auth/pre-register`, payload, { headers });
     const success = check(preRegister, {
-        'status is 200': (r) => preRegister.json().status_code === 200,
+        'status is 200': () => preRegister.json().status_code === 200,
     }) || errorRate.add(1);
 
     errorRate.add(!success);
