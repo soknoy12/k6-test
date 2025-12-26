@@ -1,29 +1,25 @@
 import http from "k6/http";
 import { sleep, check } from "k6";
 import { Rate } from "k6/metrics";
+import { config } from "./config.js";
 
 export let errorRate = new Rate("errors");
 
 export const options = {
   stages: [{ duration: "1s", target: 20 }],
   cloud: {
-    projectID: 6228592,
+    projectID: config.cloud.projectID,
     name: "mobile-card-request.js",
   },
 };
 
 export default function () {
   // Step 1: Login to get authentication token
-  let loginPayload = JSON.stringify({
-    email: "cham1@gmail.com",
-    password: "123456",
-    phone_code: "855",
-    phone_number: "213123123",
-  });
+  let loginPayload = JSON.stringify(config.credentials.mobile);
 
   let headers = { "Content-Type": "application/json" };
   let loginResponse = http.post(
-    "https://htp-mobile-api.vai247.pro/api/v1/auth/login",
+    `${config.baseUrls.mobile}/auth/login`,
     loginPayload,
     { headers }
   );
@@ -56,16 +52,16 @@ export default function () {
   };
 
   let cardRequest = http.post(
-    "https://htp-mobile-api.vai247.pro/api/v1/card-request",
+    `${config.baseUrls.mobile}/card-request`,
     cardRequestPayload,
     { headers: authHeaders }
   );
 
   let success =
     check(cardRequest, {
-      "status is 200": (r) => cardRequest.json().status_code === 200,
+      "status is 200": () => cardRequest.json().status_code === 200,
     }) || errorRate.add(1);
 
   errorRate.add(!success);
-  sleep(1); 
+  sleep(1);
 }

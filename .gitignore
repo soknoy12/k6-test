@@ -1,0 +1,10 @@
+# k6 configuration with sensitive data
+config.js
+
+# Environment files
+.env
+
+# k6 results
+results/
+*.json
+*.html
